@@ -2,6 +2,10 @@
 
 Security Talent Threat Intel is a Node.js command-line toolkit for malware triage, IOC enrichment, dark web correlation, and detection-content generation. It supports binary samples, JavaScript payloads, extracted strings, JSON logs, batch directories, and standalone IOCs such as hashes, IPs, domains, and URLs.
 
+## Proof of Concept
+
+![Security Talent Threat Intel POC](POC/POC.png)
+
 The platform combines:
 
 - Static analysis
