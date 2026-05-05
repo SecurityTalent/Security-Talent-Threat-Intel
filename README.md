@@ -38,6 +38,7 @@ TOR_TIMEOUT=30000
 ABUSEIPDB_KEY=
 VT_KEY=
 SHODAN_KEY=
+MALWAREBAZAAR_KEY=
 URLSCAN_KEY=
 FLARE_API_KEY=
 FLARE_TENANT_ID=
@@ -305,11 +306,13 @@ The response body is scanned for:
 - `urlscan`
 - `virustotal`
 - `shodan`
+- `malwarebazaar`
 - `flare`
 
 These are consumed selectively by the backend:
 
 - `searchAbuseIPDB()` for IP reputation
+- `searchMalwareBazaar()` for hash-based malware sample metadata and family hints
 - `searchShodan()` for IP exposure, DNS records, and resolved-host summaries
 - `searchUrlscan()` for scan history and domain/URL visibility
 - `searchVirusTotal()` for hash reputation
@@ -320,13 +323,14 @@ These are consumed selectively by the backend:
 For each IOC target, the backend currently runs in this order:
 
 1. AbuseIPDB
-2. Shodan
-3. URLScan
-4. VirusTotal
-5. Flare
-6. Onion search engines
-7. Paste site lookups
-8. Local campaign correlation engine
+2. MalwareBazaar
+3. Shodan
+4. URLScan
+5. VirusTotal
+6. Flare
+7. Onion search engines
+8. Paste site lookups
+9. Local campaign correlation engine
 
 This order is implemented inside:
 
@@ -411,6 +415,7 @@ These engines are defined in [config/default.js](/C:/Users/user/Desktop/threat-i
 ### Configured Clear-Web Sources
 
 - AbuseIPDB
+- MalwareBazaar
 - Shodan
 - URLScan
 - VirusTotal
@@ -451,6 +456,7 @@ The following command paths were locally verified on May 5, 2026 using temporary
 | `npm.cmd run analyze:file` | Verified | Wrapper works |
 | `npm.cmd run analyze:strings` | Verified | Wrapper works |
 | `npm.cmd run ioc:search` | Verified | Wrapper works |
+| Live MalwareBazaar results | Not live-tested | Requires network access and may optionally use `MALWAREBAZAAR_KEY` |
 | Live VirusTotal or AbuseIPDB results | Not live-tested | Requires valid API keys and network access |
 | Live Shodan results | Not live-tested | Requires valid Shodan API key and network access |
 | Live Flare results | Not live-tested | Requires valid Flare API key, tenant access, and network access |

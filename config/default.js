@@ -33,6 +33,7 @@ module.exports = {
       urlscan: 'https://urlscan.io/api/v1',
       virustotal: 'https://www.virustotal.com/api/v3',
       shodan: 'https://api.shodan.io',
+      malwarebazaar: 'https://mb-api.abuse.ch/api/v1/',
       flare: 'https://api.flare.io'
     }
   },
@@ -42,6 +43,7 @@ module.exports = {
     abuseipdb: process.env.ABUSEIPDB_KEY || '',
     virustotal: process.env.VT_KEY || '',
     shodan: process.env.SHODAN_KEY || '',
+    malwarebazaar: process.env.MALWAREBAZAAR_KEY || '',
     urlscan: process.env.URLSCAN_KEY || '',
     flare: process.env.FLARE_API_KEY || ''
   },
@@ -60,4 +62,3 @@ module.exports = {
     large_file_threshold: 10485760 // 10MB
   }
 };
-

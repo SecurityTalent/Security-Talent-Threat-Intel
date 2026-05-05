@@ -34,6 +34,7 @@ class DarkWebCollector {
 
       // 1. Clear-web threat intel APIs
       await this.searchAbuseIPDB(target, results, agent);
+      await this.searchMalwareBazaar(target, results);
       await this.searchShodan(target, results);
       await this.searchUrlscan(target, results);
       await this.searchVirusTotal(target, results);
@@ -188,6 +189,71 @@ class DarkWebCollector {
       });
     } catch (e) {
       // IP may not exist in Shodan or access level may be insufficient
+    }
+  }
+
+  /**
+   * Check MalwareBazaar for malware sample metadata by hash
+   */
+  static async searchMalwareBazaar(target, results) {
+    if (!/^[a-f0-9]{32,64}$/i.test(target)) return;
+
+    const headers = {
+      'Content-Type': 'application/x-www-form-urlencoded'
+    };
+
+    if (config.api.malwarebazaar) {
+      headers['Auth-Key'] = config.api.malwarebazaar;
+    }
+
+    try {
+      const body = new URLSearchParams({
+        query: 'get_info',
+        hash: target
+      });
+
+      const resp = await axios.post(
+        config.darkweb.clearweb.malwarebazaar,
+        body.toString(),
+        {
+          headers,
+          timeout: 12000
+        }
+      );
+
+      const status = resp.data?.query_status;
+      if (status !== 'ok') return;
+
+      const entries = Array.isArray(resp.data?.data) ? resp.data.data : [];
+      if (entries.length === 0) return;
+
+      const sample = entries[0];
+      const signature = sample.signature || sample.vendor_intel?.ANY?.malware_family || 'unknown';
+      const tags = Array.isArray(sample.tags) ? sample.tags : [];
+
+      results.sources_used.push('MalwareBazaar');
+      results.mentions_found.push(
+        `[MalwareBazaar] ${target}: sample found (${sample.file_type || 'unknown'}), signature=${signature}`
+      );
+      results.correlation.push({
+        source: 'MalwareBazaar',
+        target,
+        type: 'sample',
+        sha256: sample.sha256_hash,
+        sha1: sample.sha1_hash,
+        md5: sample.md5_hash,
+        fileName: sample.file_name,
+        fileType: sample.file_type,
+        firstSeen: sample.first_seen,
+        lastSeen: sample.last_seen,
+        signature,
+        tags: tags.slice(0, 10),
+        tlsh: sample.tlsh,
+        imphash: sample.imphash,
+        reporter: sample.reporter
+      });
+    } catch (e) {
+      // Silent fallback when MalwareBazaar is unavailable or returns no data
     }
   }
 
