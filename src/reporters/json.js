@@ -49,6 +49,76 @@ class JsonReporter {
       lines.push(`- ${ip}`);
     }
 
+    lines.push("", "Runtime Modules:");
+    for (const item of data.runtime_observables?.runtime_modules || []) {
+      lines.push(`- ${item}`);
+    }
+
+    lines.push("", "Registry Keys Opened:");
+    for (const item of data.runtime_observables?.registry_keys_opened || []) {
+      lines.push(`- ${item}`);
+    }
+
+    lines.push("", "Files Dropped:");
+    for (const item of data.runtime_observables?.files_dropped || []) {
+      lines.push(`- ${item}`);
+    }
+
+    lines.push("", "Files Deleted:");
+    for (const item of data.runtime_observables?.files_deleted || []) {
+      lines.push(`- ${item}`);
+    }
+
+    lines.push("", "Files Written:");
+    for (const item of data.runtime_observables?.files_written || []) {
+      lines.push(`- ${item}`);
+    }
+
+    lines.push("", "Files Opened:");
+    for (const item of data.runtime_observables?.files_opened || []) {
+      lines.push(`- ${item}`);
+    }
+
+    lines.push("", "DNS Resolutions:");
+    for (const item of data.runtime_observables?.dns_resolutions || []) {
+      lines.push(`- ${item}`);
+    }
+
+    lines.push("", "IP Traffic:");
+    for (const item of data.runtime_observables?.ip_traffic || []) {
+      lines.push(`- ${item}`);
+    }
+
+    lines.push("", "Source Attribution:");
+    for (const entry of data.source_attribution || data.dark_web_intel?.enrichment || []) {
+      const score = entry.detection_ratio
+        ? `${entry.detection_ratio} (${entry.match_percent || 0}%)`
+        : `${entry.match_percent || 0}%`;
+      lines.push(`- ${entry.source}: ${entry.target} | score=${score} | confidence=${entry.confidence || "UNKNOWN"}`);
+      if (entry.result_url) lines.push(`  result: ${entry.result_url}`);
+      if (entry.search_url && entry.search_url !== entry.result_url) lines.push(`  search: ${entry.search_url}`);
+    }
+
+    lines.push("", "Background Hash Lookup:");
+    if (data.background_hash_lookup?.enabled) {
+      lines.push(`- completed: ${data.background_hash_lookup?.completed ? "yes" : "no"}`);
+      for (const hash of data.background_hash_lookup?.uploaded_file_hashes || []) {
+        lines.push(`- uploaded hash: ${hash}`);
+      }
+    } else {
+      lines.push("- not triggered");
+    }
+
+    lines.push("", "External References:");
+    for (const entry of data.external_references || []) {
+      lines.push(`- ${entry.source}: ${entry.title || entry.url}`);
+      if (entry.detail) lines.push(`  detail: ${entry.detail}`);
+      if (entry.provider) lines.push(`  provider: ${entry.provider}`);
+      if (entry.artifact_type) lines.push(`  artifact: ${entry.artifact_type}`);
+      if (entry.access) lines.push(`  access: ${entry.access}`);
+      lines.push(`  url: ${entry.url}`);
+    }
+
     lines.push("", "Recommendations:");
     for (const recommendation of data.recommendations || []) {
       lines.push(`- ${recommendation}`);

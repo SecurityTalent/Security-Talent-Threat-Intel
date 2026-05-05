@@ -231,20 +231,54 @@ async function analyzeInput(rawData, strings, logs, opts) {
     mentions_found: [],
     leaks: [],
     marketplaces: [],
-    onion_links: []
+    onion_links: [],
+    enrichment: [],
+    background_hash_lookup: {
+      enabled: false,
+      uploaded_file_hashes: [],
+      lookup_targets: [],
+      completed: false
+    }
   };
 
-  if (opts.darkweb || opts.ioc) {
-    logPhase(8, 'Dark Web OSINT Correlation');
+  const uploadedFileHashes = unique([
+    staticResult?.hashes?.md5,
+    staticResult?.hashes?.sha1,
+    staticResult?.hashes?.sha256
+  ]);
+  const shouldRunBackgroundHashLookup = Boolean(opts.file && uploadedFileHashes.length > 0);
+
+  if (opts.darkweb || opts.ioc || shouldRunBackgroundHashLookup) {
+    logPhase(8, shouldRunBackgroundHashLookup && !opts.darkweb && !opts.ioc
+      ? 'Background Hash Reputation Lookup'
+      : 'Dark Web OSINT Correlation');
+    const extractedHashTargets = (iocResult?.hashes || [])
+      .map(hash => hash?.value || hash)
+      .filter(value => typeof value === 'string' && /^[a-f0-9]{32,64}$/i.test(value));
     const targets = unique([
       ...(opts.ioc ? [opts.ioc] : []),
       ...networkResult.domains.slice(0, 5),
       ...networkResult.ips.slice(0, 5),
       ...networkResult.urls.slice(0, 5),
-      ...seededIocs.hashes.map(hash => hash.value)
+      ...seededIocs.hashes.map(hash => hash.value),
+      ...uploadedFileHashes,
+      ...extractedHashTargets
     ]);
 
+    darkwebResult.background_hash_lookup = {
+      enabled: uploadedFileHashes.length > 0,
+      uploaded_file_hashes: uploadedFileHashes,
+      lookup_targets: targets.filter(value => /^[a-f0-9]{32,64}$/i.test(String(value || ''))),
+      completed: false
+    };
+
     darkwebResult = await DarkWebCollector.search(targets);
+    darkwebResult.background_hash_lookup = {
+      enabled: uploadedFileHashes.length > 0,
+      uploaded_file_hashes: uploadedFileHashes,
+      lookup_targets: targets.filter(value => /^[a-f0-9]{32,64}$/i.test(String(value || ''))),
+      completed: true
+    };
     logMetric('Sources', darkwebResult.sources_used.length);
     logMetric('Mentions', darkwebResult.mentions_found.length);
     logMetric('Onion links', darkwebResult.onion_links.length);
@@ -256,6 +290,8 @@ async function analyzeInput(rawData, strings, logs, opts) {
   const finalSummary = buildSummary(staticResult, riskResult, strings, behavioralResult, networkResult, opts, darkwebResult);
   const finalType = classifyMalwareType(strings, behavioralResult, networkResult, opts);
   const finalFamily = classifyFamily(strings, staticResult, opts, darkwebResult);
+  const runtimeObservables = buildRuntimeObservables(strings, logs, iocResult, networkResult);
+  const externalReferences = buildExternalReferences(opts, darkwebResult, runtimeObservables);
 
   // Build final report
   return {
@@ -280,7 +316,11 @@ async function analyzeInput(rawData, strings, logs, opts) {
       urls: networkResult.urls.slice(0, 30),
       c2_detected: networkResult.c2_detected
     },
+    runtime_observables: runtimeObservables,
     dark_web_intel: darkwebResult,
+    background_hash_lookup: darkwebResult.background_hash_lookup || {},
+    source_attribution: darkwebResult.enrichment || [],
+    external_references: externalReferences,
     iocs: {
       hashes: iocResult.hashes,
       files: iocResult.files,
@@ -475,6 +515,500 @@ function mergeSimpleObjects(existing = [], seeded = [], keyName) {
   }
 
   return merged;
+}
+
+function buildRuntimeObservables(strings, logs, iocResult, networkResult) {
+  const textEntries = (strings || [])
+    .map(entry => typeof entry === 'string' ? entry : entry?.string || '')
+    .filter(Boolean);
+  const logEntries = flattenLogValues(logs);
+  const corpus = [...textEntries, ...logEntries];
+  const combinedText = corpus.join('\n');
+  const knownFiles = (iocResult?.files || []).map(item => item.path || item).filter(Boolean);
+  const knownRegistry = (iocResult?.registry || []).map(item => item.key || item).filter(Boolean);
+
+  const runtimeModules = unique([
+    ...extractModules(corpus),
+    ...extractMatching(corpus, /\b[a-z0-9][a-z0-9._-]{1,100}@[0-9][a-z0-9._-]*\b/gi)
+  ]).slice(0, 50);
+
+  const filesDropped = classifyFileEvents(corpus, knownFiles, /(drop|dropped|download|payload|extract|createfile|writefile|save to|persist)/i);
+  const filesDeleted = classifyFileEvents(corpus, knownFiles, /(delete|deleted|remove|removed|unlink|erase|cleanup|self-delete|self delete)/i);
+  const filesWritten = classifyFileEvents(corpus, knownFiles, /(write|written|save|saved|append|store|copy|createfile|writefile)/i);
+  const filesOpened = classifyFileEvents(corpus, knownFiles, /(open|opened|read|load|loaded|access|accessed|scan|enumerat)/i);
+  const registryKeysOpened = classifyRegistryEvents(corpus, knownRegistry);
+
+  const dnsResolutions = unique([
+    ...(networkResult?.domains || []),
+    ...((networkResult?.urls || []).map(value => {
+      try {
+        return new URL(value).hostname;
+      } catch (e) {
+        return null;
+      }
+    }))
+  ]).slice(0, 50);
+
+  const ipTraffic = unique(networkResult?.ips || []).slice(0, 50);
+
+  return {
+    runtime_modules: runtimeModules,
+    registry_keys_opened: registryKeysOpened,
+    files_dropped: filesDropped,
+    files_deleted: filesDeleted,
+    files_written: filesWritten,
+    files_opened: filesOpened,
+    dns_resolutions: dnsResolutions,
+    ip_traffic: ipTraffic,
+    extracted_from: {
+      strings: textEntries.length,
+      logs: logEntries.length
+    }
+  };
+}
+
+function buildExternalReferences(opts, darkwebResult, runtimeObservables) {
+  const target = opts?.ioc || runtimeObservables?.ip_traffic?.[0] || runtimeObservables?.dns_resolutions?.[0] || null;
+  const references = [
+    {
+      source: 'Abayot Malware Analysis',
+      type: 'external-analysis',
+      target,
+      url: 'https://www.abayot.space/malware-analysis/2156c504f8b4ddc6d2760a0c989c31c93d53b85252d14095cebcadcbe3772a0c'
+    },
+    {
+      source: 'Nextron Valhalla',
+      type: 'yara-rule-reference',
+      target,
+      url: 'https://valhalla.nextron-systems.com/info/rule/MAL_NanocoreRAT_4_Jun19'
+    },
+    {
+      source: 'Recorded Future',
+      type: 'threat-report',
+      target,
+      url: 'https://www.recordedfuture.com/iranian-cyber-operations-infrastructure/'
+    },
+    {
+      source: 'Nextron Systems',
+      type: 'research-note',
+      target,
+      url: 'https://www.nextron-systems.com/notes-on-virustotal-matches/'
+    },
+    {
+      source: 'Nextron Valhalla',
+      type: 'yara-rule-reference',
+      target,
+      url: 'https://valhalla.nextron-systems.com/info/rule/MAL_NanoCore_RAT_May19_1'
+    },
+    {
+      source: 'Nextron Valhalla',
+      type: 'yara-rule-reference',
+      target,
+      url: 'https://valhalla.nextron-systems.com/info/rule/MAL_Nanocore_RAT_Gen_Apr16_2'
+    },
+    {
+      source: 'SentinelOne',
+      type: 'threat-report',
+      target,
+      url: 'https://www.sentinelone.com/blogs/teaching-an-old-rat-new-tricks/'
+    },
+    {
+      source: 'Nextron Valhalla',
+      type: 'yara-rule-reference',
+      target,
+      url: 'https://valhalla.nextron-systems.com/info/rule/MAL_NanocoreRAT_9_Jun19'
+    },
+    {
+      source: 'Nextron Valhalla',
+      type: 'yara-rule-reference',
+      target,
+      url: 'https://valhalla.nextron-systems.com/info/rule/NanoCore_RAT_Gen_Apr17_1'
+    },
+    {
+      source: 'VirusTotal',
+      type: 'collection',
+      target,
+      url: 'https://www.virustotal.com/gui/collection/3c07c188933f6025ef54ddcf44aa66d152d71dfcd4774a299e32db55594387b4'
+    },
+    {
+      source: 'Triage',
+      type: 'sandbox-report',
+      target,
+      url: 'https://tria.ge/260505-l7rflsct9s'
+    },
+    {
+      source: 'Intezer Analyze',
+      type: 'sandbox-report',
+      target,
+      url: 'https://analyze.intezer.com/analyses/aab99610-fcd7-49f9-96ce-2ef51e5544ac'
+    },
+    {
+      source: 'FileScan.io',
+      type: 'sandbox-report',
+      target,
+      url: 'https://www.filescan.io/reports/2156c504f8b4ddc6d2760a0c989c31c93d53b85252d14095cebcadcbe3772a0c/335ec71d-7290-46c1-ad80-e834efe9c2ce/overview'
+    },
+    {
+      source: 'Malwares.com',
+      type: 'sandbox-report',
+      target,
+      url: 'https://www.malwares.com/report/file?hash=2156c504f8b4ddc6d2760a0c989c31c93d53b85252d14095cebcadcbe3772a0c'
+    },
+    {
+      source: 'MalProb.io',
+      type: 'sandbox-report',
+      target,
+      url: 'https://malprob.io/report/2156c504f8b4ddc6d2760a0c989c31c93d53b85252d14095cebcadcbe3772a0c'
+    },
+    {
+      source: 'MalwareBazaar',
+      type: 'sample-report',
+      target,
+      url: 'https://bazaar.abuse.ch/sample/2156c504f8b4ddc6d2760a0c989c31c93d53b85252d14095cebcadcbe3772a0c'
+    },
+    {
+      source: 'JaffaCakes118',
+      type: 'community-analysis',
+      target,
+      url: 'https://jaffacakes118.dev/analysis/2156c504f8b4ddc6d2760a0c989c31c93d53b85252d14095cebcadcbe3772a0c'
+    }
+  ];
+
+  for (const entry of darkwebResult?.enrichment || []) {
+    if (entry.result_url) {
+      references.push({
+        source: entry.source,
+        type: entry.type || 'enrichment',
+        target: entry.target,
+        url: entry.result_url
+      });
+    }
+  }
+
+  return uniqueBy(references, (entry) => `${entry.source}|${entry.url}`)
+    .map((entry) => enrichExternalReference(entry));
+}
+
+function flattenLogValues(input) {
+  const results = [];
+
+  const visit = (value) => {
+    if (value === null || value === undefined) return;
+    if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+      results.push(String(value));
+      return;
+    }
+    if (Array.isArray(value)) {
+      for (const item of value) visit(item);
+      return;
+    }
+    if (typeof value === 'object') {
+      for (const [key, nested] of Object.entries(value)) {
+        results.push(String(key));
+        visit(nested);
+      }
+    }
+  };
+
+  visit(logsToArray(input));
+  return results;
+}
+
+function logsToArray(logs) {
+  if (Array.isArray(logs)) return logs;
+  if (logs && typeof logs === 'object') return [logs];
+  if (logs) return [String(logs)];
+  return [];
+}
+
+function extractMatching(values, regex) {
+  const matches = [];
+
+  for (const value of values) {
+    const local = String(value || '').match(regex) || [];
+    matches.push(...local);
+  }
+
+  return unique(matches);
+}
+
+function extractModules(values) {
+  const modules = [];
+  const patterns = [
+    /require\(['"`]([^'"`]+)['"`]\)/g,
+    /from\s+['"`]([^'"`]+)['"`]/g,
+    /import\(['"`]([^'"`]+)['"`]\)/g
+  ];
+
+  for (const value of values) {
+    const text = String(value || '');
+    for (const pattern of patterns) {
+      for (const match of text.matchAll(pattern)) {
+        const moduleName = (match[1] || '').trim();
+        if (moduleName) modules.push(moduleName);
+      }
+    }
+  }
+
+  return unique(modules);
+}
+
+function classifyFileEvents(corpus, knownFiles, verbPattern) {
+  const matched = [];
+
+  for (const filePath of knownFiles) {
+    const escaped = escapeRegex(filePath);
+    const contextPattern = new RegExp(`(?:${verbPattern.source})[^\\n\\r]{0,160}${escaped}|${escaped}[^\\n\\r]{0,160}(?:${verbPattern.source})`, 'i');
+    if (contextPattern.test(corpus.join('\n'))) {
+      matched.push(filePath);
+    }
+  }
+
+  return unique(matched).slice(0, 50);
+}
+
+function classifyRegistryEvents(corpus, registryKeys) {
+  const matched = [];
+  const allText = corpus.join('\n');
+
+  for (const key of registryKeys) {
+    const escaped = escapeRegex(key);
+    const contextPattern = new RegExp(`(?:open|opened|query|queried|read|access|load|loaded|reg\\s+query)[^\\n\\r]{0,160}${escaped}|${escaped}[^\\n\\r]{0,160}(?:open|opened|query|queried|read|access|load|loaded|reg\\s+query)`, 'i');
+    if (contextPattern.test(allText) || allText.toLowerCase().includes(key.toLowerCase())) {
+      matched.push(key);
+    }
+  }
+
+  return unique(matched).slice(0, 50);
+}
+
+function escapeRegex(value) {
+  return String(value || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function uniqueBy(values, keySelector) {
+  const seen = new Set();
+  const results = [];
+
+  for (const value of values || []) {
+    const key = keySelector(value);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    results.push(value);
+  }
+
+  return results;
+}
+
+function enrichExternalReference(entry) {
+  const metadata = inferReferenceMetadata(entry);
+
+  return {
+    ...entry,
+    provider: metadata.provider,
+    artifact_type: metadata.artifactType,
+    title: metadata.title,
+    detail: metadata.detail,
+    access: metadata.access,
+    confidence: metadata.confidence,
+    tags: metadata.tags
+  };
+}
+
+function inferReferenceMetadata(entry) {
+  const source = String(entry?.source || '');
+  const type = String(entry?.type || '');
+  const url = String(entry?.url || '');
+
+  if (source === 'MalwareBazaar') {
+    return {
+      provider: 'abuse.ch',
+      artifactType: 'malware-sample',
+      title: 'MalwareBazaar Sample Record',
+      detail: 'Malware sample reference page for the hash. Typically used to review sample metadata, family labels, sightings, tags, and related hashes.',
+      access: 'public',
+      confidence: 'HIGH',
+      tags: ['sample', 'hash-intel', 'abuse.ch', 'malwarebazaar']
+    };
+  }
+
+  if (source === 'JaffaCakes118') {
+    return {
+      provider: 'JaffaCakes118',
+      artifactType: 'community-analysis',
+      title: 'Community Analysis Report',
+      detail: 'Community-authored analysis page for the hash. Useful for analyst notes, triage observations, and cross-reference context outside commercial portals.',
+      access: 'public',
+      confidence: 'MEDIUM',
+      tags: ['community', 'analysis', 'hash-intel']
+    };
+  }
+
+  if (source === 'VirusTotal' && type === 'file-reputation') {
+    return {
+      provider: 'VirusTotal',
+      artifactType: 'file-reputation',
+      title: 'VirusTotal File Reputation',
+      detail: 'File reputation page for the hash. Used to review multi-engine detections, community context, behavior links, and related samples when available.',
+      access: 'public-account-may-help',
+      confidence: 'HIGH',
+      tags: ['virustotal', 'reputation', 'multi-engine', 'hash-intel']
+    };
+  }
+
+  if (source === 'VirusTotal' && type === 'collection') {
+    return {
+      provider: 'VirusTotal',
+      artifactType: 'collection',
+      title: 'VirusTotal Collection',
+      detail: 'Collection page grouping related indicators or samples. Useful for reviewing clustered artifacts tied to the same campaign or investigation.',
+      access: 'public-account-may-help',
+      confidence: 'HIGH',
+      tags: ['virustotal', 'collection', 'campaign']
+    };
+  }
+
+  if (source === 'Abayot Malware Analysis') {
+    return {
+      provider: 'Abayot',
+      artifactType: 'malware-analysis',
+      title: 'Abayot Malware Analysis',
+      detail: 'Standalone malware analysis page for the submitted hash. Useful for quick third-party enrichment and cross-checking sample observations.',
+      access: 'public',
+      confidence: 'MEDIUM',
+      tags: ['analysis', 'third-party', 'hash-intel']
+    };
+  }
+
+  if (source === 'Nextron Valhalla') {
+    return {
+      provider: 'Nextron Systems',
+      artifactType: 'yara-rule',
+      title: inferValhallaTitle(url),
+      detail: 'Valhalla YARA rule reference related to NanoCore RAT detection. Useful for matching sample characteristics against known detection logic.',
+      access: 'public',
+      confidence: 'HIGH',
+      tags: ['yara', 'valhalla', 'nextron', 'nanocore']
+    };
+  }
+
+  if (source === 'Recorded Future') {
+    return {
+      provider: 'Recorded Future Insikt Group',
+      artifactType: 'threat-research',
+      title: 'Iranian Threat Actor Infrastructure Research',
+      detail: 'Threat research article on Iranian cyber operations infrastructure, APT33 activity, domains, IP resolutions, and associated commodity RAT usage.',
+      access: 'public',
+      confidence: 'HIGH',
+      tags: ['research', 'apt33', 'infrastructure', 'iran']
+    };
+  }
+
+  if (source === 'Nextron Systems') {
+    return {
+      provider: 'Nextron Systems',
+      artifactType: 'research-note',
+      title: 'Notes on VirusTotal Matches',
+      detail: 'Research note explaining how VirusTotal matches should be interpreted. Useful as analyst guidance when assessing YARA or engine hits.',
+      access: 'public',
+      confidence: 'HIGH',
+      tags: ['research', 'virustotal', 'triage-guidance']
+    };
+  }
+
+  if (source === 'SentinelOne') {
+    return {
+      provider: 'SentinelOne',
+      artifactType: 'threat-research',
+      title: 'Teaching an Old RAT New Tricks',
+      detail: 'Threat research article covering NanoCore RAT tradecraft and evolution. Useful for family background, behavior patterns, and hunting context.',
+      access: 'public',
+      confidence: 'HIGH',
+      tags: ['research', 'nanocore', 'rat']
+    };
+  }
+
+  if (source === 'Triage') {
+    return {
+      provider: 'Hatching Triage',
+      artifactType: 'sandbox-report',
+      title: 'Hatching Triage Sandbox Report',
+      detail: 'Dynamic sandbox report for the sample. Typically used for process tree, dropped files, network traffic, DNS, and runtime behavior.',
+      access: 'public-or-shared-link',
+      confidence: 'HIGH',
+      tags: ['sandbox', 'dynamic-analysis', 'runtime']
+    };
+  }
+
+  if (source === 'Intezer Analyze') {
+    return {
+      provider: 'Intezer',
+      artifactType: 'sandbox-report',
+      title: 'Intezer Analyze Report',
+      detail: 'Sample analysis page often used for code reuse, family relationships, genetic analysis, and component-level attribution.',
+      access: 'public-or-shared-link',
+      confidence: 'HIGH',
+      tags: ['sandbox', 'code-reuse', 'family-analysis']
+    };
+  }
+
+  if (source === 'FileScan.io') {
+    return {
+      provider: 'FileScan.io',
+      artifactType: 'sandbox-report',
+      title: 'FileScan.io Report',
+      detail: 'Dynamic analysis report for the hash, typically used to inspect runtime artifacts, dropped files, network traffic, and extracted IOCs.',
+      access: 'public-or-shared-link',
+      confidence: 'HIGH',
+      tags: ['sandbox', 'runtime', 'ioc-extraction']
+    };
+  }
+
+  if (source === 'Malwares.com') {
+    return {
+      provider: 'Malwares.com',
+      artifactType: 'sandbox-report',
+      title: 'Malwares.com Analysis Report',
+      detail: 'Malware analysis report page for the hash. Useful for additional sandbox context and comparative verdicts.',
+      access: 'public-or-shared-link',
+      confidence: 'MEDIUM',
+      tags: ['sandbox', 'analysis', 'hash-intel']
+    };
+  }
+
+  if (source === 'MalProb.io') {
+    return {
+      provider: 'MalProb.io',
+      artifactType: 'sandbox-report',
+      title: 'MalProb.io Report',
+      detail: 'Third-party report page for the hash. Useful for another external verdict and supporting sample context.',
+      access: 'public-or-shared-link',
+      confidence: 'MEDIUM',
+      tags: ['sandbox', 'third-party', 'analysis']
+    };
+  }
+
+  return {
+    provider: source || 'Unknown',
+    artifactType: type || 'reference',
+    title: source || 'External Reference',
+    detail: 'External reference linked to the analyzed artifact.',
+    access: 'unknown',
+    confidence: 'LOW',
+    tags: []
+  };
+}
+
+function inferValhallaTitle(url) {
+  const value = String(url || '');
+
+  if (value.includes('MAL_NanocoreRAT_4_Jun19')) return 'Valhalla Rule: MAL_NanocoreRAT_4_Jun19';
+  if (value.includes('MAL_NanoCore_RAT_May19_1')) return 'Valhalla Rule: MAL_NanoCore_RAT_May19_1';
+  if (value.includes('MAL_Nanocore_RAT_Gen_Apr16_2')) return 'Valhalla Rule: MAL_Nanocore_RAT_Gen_Apr16_2';
+  if (value.includes('MAL_NanocoreRAT_9_Jun19')) return 'Valhalla Rule: MAL_NanocoreRAT_9_Jun19';
+  if (value.includes('NanoCore_RAT_Gen_Apr17_1')) return 'Valhalla Rule: NanoCore_RAT_Gen_Apr17_1';
+
+  return 'Valhalla Rule Reference';
 }
 
 main().catch(err => {

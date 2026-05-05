@@ -20,7 +20,8 @@ class DarkWebCollector {
       leaks: [],
       marketplaces: [],
       onion_links: [],
-      correlation: [] // Links targets to known campaigns
+      correlation: [], // Links targets to known campaigns
+      enrichment: []
     };
 
     if (!targets || targets.length === 0) return results;
@@ -66,6 +67,19 @@ class DarkWebCollector {
         c
       ])
     ).values()];
+    results.enrichment = [...new Map(
+      results.enrichment.map(entry => [
+        JSON.stringify([
+          entry.source || '',
+          entry.target || '',
+          entry.type || '',
+          entry.reference || '',
+          entry.result_url || '',
+          entry.search_url || ''
+        ]),
+        entry
+      ])
+    ).values()];
 
     return results;
   }
@@ -90,6 +104,19 @@ class DarkWebCollector {
           `[AbuseIPDB] IP ${target}: ${d.totalReports} reports, abuse confidence ${d.abuseConfidenceScore}%`
         );
         results.sources_used.push('AbuseIPDB');
+        this.addEnrichment(results, {
+          source: 'AbuseIPDB',
+          target,
+          type: 'ip-reputation',
+          match_percent: d.abuseConfidenceScore,
+          confidence: this.percentToConfidence(d.abuseConfidenceScore),
+          reports: d.totalReports,
+          last_reported: d.lastReportedAt,
+          search_url: `https://www.abuseipdb.com/check/${encodeURIComponent(target)}`,
+          result_url: `https://www.abuseipdb.com/check/${encodeURIComponent(target)}`,
+          reference: target,
+          summary: `${d.totalReports} report(s), abuse confidence ${d.abuseConfidenceScore}%`
+        });
         if (d.countryCode) results.correlation.push({
           source: 'AbuseIPDB',
           target,
@@ -235,6 +262,25 @@ class DarkWebCollector {
       results.mentions_found.push(
         `[MalwareBazaar] ${target}: sample found (${sample.file_type || 'unknown'}), signature=${signature}`
       );
+      const sampleHash = sample.sha256_hash || target;
+      const searchField = this.getHashSearchField(target);
+      this.addEnrichment(results, {
+        source: 'MalwareBazaar',
+        target,
+        type: 'malware-sample',
+        match_percent: 100,
+        confidence: 'HIGH',
+        signature,
+        file_name: sample.file_name,
+        file_type: sample.file_type,
+        first_seen: sample.first_seen,
+        last_seen: sample.last_seen,
+        tags: tags.slice(0, 10),
+        result_url: `https://bazaar.abuse.ch/sample/${encodeURIComponent(sampleHash)}/`,
+        search_url: `https://bazaar.abuse.ch/browse.php?search=${encodeURIComponent(`${searchField}:${target}`)}`,
+        reference: sampleHash,
+        summary: `Exact hash match in MalwareBazaar, signature=${signature}`
+      });
       results.correlation.push({
         source: 'MalwareBazaar',
         target,
@@ -303,18 +349,39 @@ class DarkWebCollector {
         const stats = resp.data.data.attributes.last_analysis_stats;
         const malicious = stats?.malicious || 0;
         const suspicious = stats?.suspicious || 0;
+        const harmless = stats?.harmless || 0;
+        const undetected = stats?.undetected || 0;
+        const total = malicious + suspicious + harmless + undetected + (stats?.timeout || 0) + (stats?.type_unsupported || 0) + (stats?.confirmed_timeout || 0) + (stats?.failure || 0);
+        const flagged = malicious + suspicious;
+        const matchPercent = total > 0 ? Number(((flagged / total) * 100).toFixed(2)) : 0;
         if (malicious > 0 || suspicious > 0) {
           results.mentions_found.push(
             `[VirusTotal] ${target}: ${malicious} malicious, ${suspicious} suspicious detections`
           );
           results.sources_used.push('VirusTotal');
+          this.addEnrichment(results, {
+            source: 'VirusTotal',
+            target,
+            type: 'file-reputation',
+            malicious,
+            suspicious,
+            harmless,
+            undetected,
+            detection_ratio: total > 0 ? `${flagged}/${total}` : null,
+            match_percent: matchPercent,
+            confidence: this.percentToConfidence(matchPercent),
+            result_url: `https://www.virustotal.com/gui/file/${encodeURIComponent(target)}`,
+            search_url: `https://www.virustotal.com/gui/search/${encodeURIComponent(target)}`,
+            reference: target,
+            summary: `${malicious} malicious, ${suspicious} suspicious, detection ratio ${flagged}/${total || 0}`
+          });
           results.correlation.push({
             source: 'VirusTotal',
             target,
             malicious,
             suspicious,
-            undetected: stats?.undetected || 0,
-            harmless: stats?.harmless || 0
+            undetected,
+            harmless
           });
         }
       }
@@ -592,6 +659,46 @@ class DarkWebCollector {
     } catch (e) {
       return null;
     }
+  }
+
+  static addEnrichment(results, entry) {
+    results.enrichment.push({
+      source: entry.source,
+      target: entry.target,
+      type: entry.type,
+      reference: entry.reference,
+      summary: entry.summary,
+      confidence: entry.confidence,
+      match_percent: entry.match_percent,
+      detection_ratio: entry.detection_ratio || null,
+      reports: entry.reports,
+      malicious: entry.malicious,
+      suspicious: entry.suspicious,
+      harmless: entry.harmless,
+      undetected: entry.undetected,
+      signature: entry.signature,
+      file_name: entry.file_name,
+      file_type: entry.file_type,
+      first_seen: entry.first_seen,
+      last_seen: entry.last_seen,
+      last_reported: entry.last_reported,
+      tags: entry.tags || [],
+      search_url: entry.search_url,
+      result_url: entry.result_url
+    });
+  }
+
+  static percentToConfidence(value) {
+    if (value >= 80) return 'HIGH';
+    if (value >= 40) return 'MEDIUM';
+    if (value > 0) return 'LOW';
+    return 'NONE';
+  }
+
+  static getHashSearchField(hash) {
+    if (/^[a-f0-9]{32}$/i.test(hash)) return 'md5_hash';
+    if (/^[a-f0-9]{40}$/i.test(hash)) return 'sha1_hash';
+    return 'sha256_hash';
   }
 }
 

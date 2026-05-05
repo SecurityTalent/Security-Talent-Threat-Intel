@@ -31,11 +31,24 @@ class CombinedPipeline {
     const mitreTechniques = MitreMapper.map(strings, behavioralResult, networkResult);
     const riskAssessment = RiskAssessor.assess(staticResult, behavioralResult, networkResult, mitreTechniques);
     const detections = DetectionGenerator.generate(staticResult, networkResult, iocs);
-    const darkWebIntel = await DarkWebCollector.search([
+    const uploadedFileHashes = [
+      staticResult?.hashes?.md5,
+      staticResult?.hashes?.sha1,
+      staticResult?.hashes?.sha256
+    ].filter(Boolean);
+    const darkWebTargets = [
       ...networkResult.domains,
       ...networkResult.ips,
-      ...networkResult.urls
-    ]);
+      ...networkResult.urls,
+      ...uploadedFileHashes
+    ];
+    const darkWebIntel = await DarkWebCollector.search(darkWebTargets);
+    darkWebIntel.background_hash_lookup = {
+      enabled: uploadedFileHashes.length > 0,
+      uploaded_file_hashes: uploadedFileHashes,
+      lookup_targets: darkWebTargets.filter(value => /^[a-f0-9]{32,64}$/i.test(String(value || ""))),
+      completed: true
+    };
 
     const analysisData = {
       id: crypto.randomUUID(),
@@ -69,6 +82,7 @@ class CombinedPipeline {
       detection: detections,
       recommendations: riskAssessment.recommendations,
       dark_web_intel: darkWebIntel,
+      background_hash_lookup: darkWebIntel.background_hash_lookup,
       pipeline_version: "2.0.0"
     };
 

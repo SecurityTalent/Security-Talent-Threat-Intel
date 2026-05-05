@@ -377,6 +377,41 @@ All enrichment results are merged into a single result object:
 - `marketplaces`
 - `onion_links`
 - `correlation`
+- `enrichment`
+
+The top-level report also exposes the same normalized enrichment rows in:
+
+- `source_attribution`
+- `external_references`
+
+Runtime-oriented output is also normalized in:
+
+- `runtime_observables.runtime_modules`
+- `runtime_observables.registry_keys_opened`
+- `runtime_observables.files_dropped`
+- `runtime_observables.files_deleted`
+- `runtime_observables.files_written`
+- `runtime_observables.files_opened`
+- `runtime_observables.dns_resolutions`
+- `runtime_observables.ip_traffic`
+
+`external_references` may include curated:
+
+- Valhalla / Nextron rule links
+- VirusTotal collection links
+- sandbox report links such as Triage, Intezer, FileScan, Malwares.com, and MalProb.io
+- public research and community analysis references
+
+Each enrichment row can now include:
+
+- `source`
+- `target`
+- `type`
+- `confidence`
+- `match_percent`
+- `detection_ratio`
+- `result_url`
+- `search_url`
 
 The backend de-duplicates repeated entries before returning the final report object.
 

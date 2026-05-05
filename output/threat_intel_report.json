@@ -1,7 +1,6 @@
 {
-  "summary": "Threat intelligence report for IOC 2156c504f8b4ddc6d2760a0c989c31c93d53b85252d14095cebcadcbe3772a0c. Severity: INFORMATIONAL. Type: IOC Reputation / Correlation Lookup. 1 suspicious indicators identified.",
+  "summary": "Threat intelligence report for IOC 2156c504f8b4ddc6d2760a0c989c31c93d53b85252d14095cebcadcbe3772a0c. Severity: INFORMATIONAL. Type: IOC Reputation / Correlation Lookup. 1 suspicious indicators identified. 1 threat intelligence correlation(s) identified.",
   "malware_type": "IOC Reputation / Correlation Lookup",
-  "possible_family": "Unknown / Unclassified",
   "severity": "INFORMATIONAL",
   "static_analysis": {
     "file_type": "IOC Hash (SHA256)",
@@ -22,14 +21,411 @@
     "urls": [],
     "c2_detected": "No"
   },
+  "runtime_observables": {
+    "runtime_modules": [],
+    "registry_keys_opened": [],
+    "files_dropped": [],
+    "files_deleted": [],
+    "files_written": [],
+    "files_opened": [],
+    "dns_resolutions": [],
+    "ip_traffic": [],
+    "extracted_from": {
+      "strings": 0,
+      "logs": 0
+    }
+  },
   "dark_web_intel": {
-    "sources_used": [],
-    "mentions_found": [],
+    "sources_used": [
+      "VirusTotal"
+    ],
+    "mentions_found": [
+      "[VirusTotal] 2156c504f8b4ddc6d2760a0c989c31c93d53b85252d14095cebcadcbe3772a0c: 61 malicious, 0 suspicious detections"
+    ],
     "leaks": [],
     "marketplaces": [],
     "onion_links": [],
-    "correlation": []
+    "correlation": [
+      {
+        "source": "VirusTotal",
+        "target": "2156c504f8b4ddc6d2760a0c989c31c93d53b85252d14095cebcadcbe3772a0c",
+        "malicious": 61,
+        "suspicious": 0,
+        "undetected": 9,
+        "harmless": 0
+      }
+    ],
+    "enrichment": [
+      {
+        "source": "VirusTotal",
+        "target": "2156c504f8b4ddc6d2760a0c989c31c93d53b85252d14095cebcadcbe3772a0c",
+        "type": "file-reputation",
+        "reference": "2156c504f8b4ddc6d2760a0c989c31c93d53b85252d14095cebcadcbe3772a0c",
+        "summary": "61 malicious, 0 suspicious, detection ratio 61/70",
+        "confidence": "HIGH",
+        "match_percent": 87.14,
+        "detection_ratio": "61/70",
+        "malicious": 61,
+        "suspicious": 0,
+        "harmless": 0,
+        "undetected": 9,
+        "tags": [],
+        "search_url": "https://www.virustotal.com/gui/search/2156c504f8b4ddc6d2760a0c989c31c93d53b85252d14095cebcadcbe3772a0c",
+        "result_url": "https://www.virustotal.com/gui/file/2156c504f8b4ddc6d2760a0c989c31c93d53b85252d14095cebcadcbe3772a0c"
+      }
+    ],
+    "background_hash_lookup": {
+      "enabled": false,
+      "uploaded_file_hashes": [],
+      "lookup_targets": [
+        "2156c504f8b4ddc6d2760a0c989c31c93d53b85252d14095cebcadcbe3772a0c"
+      ],
+      "completed": true
+    }
   },
+  "background_hash_lookup": {
+    "enabled": false,
+    "uploaded_file_hashes": [],
+    "lookup_targets": [
+      "2156c504f8b4ddc6d2760a0c989c31c93d53b85252d14095cebcadcbe3772a0c"
+    ],
+    "completed": true
+  },
+  "source_attribution": [
+    {
+      "source": "VirusTotal",
+      "target": "2156c504f8b4ddc6d2760a0c989c31c93d53b85252d14095cebcadcbe3772a0c",
+      "type": "file-reputation",
+      "reference": "2156c504f8b4ddc6d2760a0c989c31c93d53b85252d14095cebcadcbe3772a0c",
+      "summary": "61 malicious, 0 suspicious, detection ratio 61/70",
+      "confidence": "HIGH",
+      "match_percent": 87.14,
+      "detection_ratio": "61/70",
+      "malicious": 61,
+      "suspicious": 0,
+      "harmless": 0,
+      "undetected": 9,
+      "tags": [],
+      "search_url": "https://www.virustotal.com/gui/search/2156c504f8b4ddc6d2760a0c989c31c93d53b85252d14095cebcadcbe3772a0c",
+      "result_url": "https://www.virustotal.com/gui/file/2156c504f8b4ddc6d2760a0c989c31c93d53b85252d14095cebcadcbe3772a0c"
+    }
+  ],
+  "external_references": [
+    {
+      "source": "Abayot Malware Analysis",
+      "type": "external-analysis",
+      "target": "2156c504f8b4ddc6d2760a0c989c31c93d53b85252d14095cebcadcbe3772a0c",
+      "url": "https://www.abayot.space/malware-analysis/2156c504f8b4ddc6d2760a0c989c31c93d53b85252d14095cebcadcbe3772a0c",
+      "provider": "Abayot",
+      "artifact_type": "malware-analysis",
+      "title": "Abayot Malware Analysis",
+      "detail": "Standalone malware analysis page for the submitted hash. Useful for quick third-party enrichment and cross-checking sample observations.",
+      "access": "public",
+      "confidence": "MEDIUM",
+      "tags": [
+        "analysis",
+        "third-party",
+        "hash-intel"
+      ]
+    },
+    {
+      "source": "Nextron Valhalla",
+      "type": "yara-rule-reference",
+      "target": "2156c504f8b4ddc6d2760a0c989c31c93d53b85252d14095cebcadcbe3772a0c",
+      "url": "https://valhalla.nextron-systems.com/info/rule/MAL_NanocoreRAT_4_Jun19",
+      "provider": "Nextron Systems",
+      "artifact_type": "yara-rule",
+      "title": "Valhalla Rule: MAL_NanocoreRAT_4_Jun19",
+      "detail": "Valhalla YARA rule reference related to NanoCore RAT detection. Useful for matching sample characteristics against known detection logic.",
+      "access": "public",
+      "confidence": "HIGH",
+      "tags": [
+        "yara",
+        "valhalla",
+        "nextron",
+        "nanocore"
+      ]
+    },
+    {
+      "source": "Recorded Future",
+      "type": "threat-report",
+      "target": "2156c504f8b4ddc6d2760a0c989c31c93d53b85252d14095cebcadcbe3772a0c",
+      "url": "https://www.recordedfuture.com/iranian-cyber-operations-infrastructure/",
+      "provider": "Recorded Future Insikt Group",
+      "artifact_type": "threat-research",
+      "title": "Iranian Threat Actor Infrastructure Research",
+      "detail": "Threat research article on Iranian cyber operations infrastructure, APT33 activity, domains, IP resolutions, and associated commodity RAT usage.",
+      "access": "public",
+      "confidence": "HIGH",
+      "tags": [
+        "research",
+        "apt33",
+        "infrastructure",
+        "iran"
+      ]
+    },
+    {
+      "source": "Nextron Systems",
+      "type": "research-note",
+      "target": "2156c504f8b4ddc6d2760a0c989c31c93d53b85252d14095cebcadcbe3772a0c",
+      "url": "https://www.nextron-systems.com/notes-on-virustotal-matches/",
+      "provider": "Nextron Systems",
+      "artifact_type": "research-note",
+      "title": "Notes on VirusTotal Matches",
+      "detail": "Research note explaining how VirusTotal matches should be interpreted. Useful as analyst guidance when assessing YARA or engine hits.",
+      "access": "public",
+      "confidence": "HIGH",
+      "tags": [
+        "research",
+        "virustotal",
+        "triage-guidance"
+      ]
+    },
+    {
+      "source": "Nextron Valhalla",
+      "type": "yara-rule-reference",
+      "target": "2156c504f8b4ddc6d2760a0c989c31c93d53b85252d14095cebcadcbe3772a0c",
+      "url": "https://valhalla.nextron-systems.com/info/rule/MAL_NanoCore_RAT_May19_1",
+      "provider": "Nextron Systems",
+      "artifact_type": "yara-rule",
+      "title": "Valhalla Rule: MAL_NanoCore_RAT_May19_1",
+      "detail": "Valhalla YARA rule reference related to NanoCore RAT detection. Useful for matching sample characteristics against known detection logic.",
+      "access": "public",
+      "confidence": "HIGH",
+      "tags": [
+        "yara",
+        "valhalla",
+        "nextron",
+        "nanocore"
+      ]
+    },
+    {
+      "source": "Nextron Valhalla",
+      "type": "yara-rule-reference",
+      "target": "2156c504f8b4ddc6d2760a0c989c31c93d53b85252d14095cebcadcbe3772a0c",
+      "url": "https://valhalla.nextron-systems.com/info/rule/MAL_Nanocore_RAT_Gen_Apr16_2",
+      "provider": "Nextron Systems",
+      "artifact_type": "yara-rule",
+      "title": "Valhalla Rule: MAL_Nanocore_RAT_Gen_Apr16_2",
+      "detail": "Valhalla YARA rule reference related to NanoCore RAT detection. Useful for matching sample characteristics against known detection logic.",
+      "access": "public",
+      "confidence": "HIGH",
+      "tags": [
+        "yara",
+        "valhalla",
+        "nextron",
+        "nanocore"
+      ]
+    },
+    {
+      "source": "SentinelOne",
+      "type": "threat-report",
+      "target": "2156c504f8b4ddc6d2760a0c989c31c93d53b85252d14095cebcadcbe3772a0c",
+      "url": "https://www.sentinelone.com/blogs/teaching-an-old-rat-new-tricks/",
+      "provider": "SentinelOne",
+      "artifact_type": "threat-research",
+      "title": "Teaching an Old RAT New Tricks",
+      "detail": "Threat research article covering NanoCore RAT tradecraft and evolution. Useful for family background, behavior patterns, and hunting context.",
+      "access": "public",
+      "confidence": "HIGH",
+      "tags": [
+        "research",
+        "nanocore",
+        "rat"
+      ]
+    },
+    {
+      "source": "Nextron Valhalla",
+      "type": "yara-rule-reference",
+      "target": "2156c504f8b4ddc6d2760a0c989c31c93d53b85252d14095cebcadcbe3772a0c",
+      "url": "https://valhalla.nextron-systems.com/info/rule/MAL_NanocoreRAT_9_Jun19",
+      "provider": "Nextron Systems",
+      "artifact_type": "yara-rule",
+      "title": "Valhalla Rule: MAL_NanocoreRAT_9_Jun19",
+      "detail": "Valhalla YARA rule reference related to NanoCore RAT detection. Useful for matching sample characteristics against known detection logic.",
+      "access": "public",
+      "confidence": "HIGH",
+      "tags": [
+        "yara",
+        "valhalla",
+        "nextron",
+        "nanocore"
+      ]
+    },
+    {
+      "source": "Nextron Valhalla",
+      "type": "yara-rule-reference",
+      "target": "2156c504f8b4ddc6d2760a0c989c31c93d53b85252d14095cebcadcbe3772a0c",
+      "url": "https://valhalla.nextron-systems.com/info/rule/NanoCore_RAT_Gen_Apr17_1",
+      "provider": "Nextron Systems",
+      "artifact_type": "yara-rule",
+      "title": "Valhalla Rule: NanoCore_RAT_Gen_Apr17_1",
+      "detail": "Valhalla YARA rule reference related to NanoCore RAT detection. Useful for matching sample characteristics against known detection logic.",
+      "access": "public",
+      "confidence": "HIGH",
+      "tags": [
+        "yara",
+        "valhalla",
+        "nextron",
+        "nanocore"
+      ]
+    },
+    {
+      "source": "VirusTotal",
+      "type": "collection",
+      "target": "2156c504f8b4ddc6d2760a0c989c31c93d53b85252d14095cebcadcbe3772a0c",
+      "url": "https://www.virustotal.com/gui/collection/3c07c188933f6025ef54ddcf44aa66d152d71dfcd4774a299e32db55594387b4",
+      "provider": "VirusTotal",
+      "artifact_type": "collection",
+      "title": "VirusTotal Collection",
+      "detail": "Collection page grouping related indicators or samples. Useful for reviewing clustered artifacts tied to the same campaign or investigation.",
+      "access": "public-account-may-help",
+      "confidence": "HIGH",
+      "tags": [
+        "virustotal",
+        "collection",
+        "campaign"
+      ]
+    },
+    {
+      "source": "Triage",
+      "type": "sandbox-report",
+      "target": "2156c504f8b4ddc6d2760a0c989c31c93d53b85252d14095cebcadcbe3772a0c",
+      "url": "https://tria.ge/260505-l7rflsct9s",
+      "provider": "Hatching Triage",
+      "artifact_type": "sandbox-report",
+      "title": "Hatching Triage Sandbox Report",
+      "detail": "Dynamic sandbox report for the sample. Typically used for process tree, dropped files, network traffic, DNS, and runtime behavior.",
+      "access": "public-or-shared-link",
+      "confidence": "HIGH",
+      "tags": [
+        "sandbox",
+        "dynamic-analysis",
+        "runtime"
+      ]
+    },
+    {
+      "source": "Intezer Analyze",
+      "type": "sandbox-report",
+      "target": "2156c504f8b4ddc6d2760a0c989c31c93d53b85252d14095cebcadcbe3772a0c",
+      "url": "https://analyze.intezer.com/analyses/aab99610-fcd7-49f9-96ce-2ef51e5544ac",
+      "provider": "Intezer",
+      "artifact_type": "sandbox-report",
+      "title": "Intezer Analyze Report",
+      "detail": "Sample analysis page often used for code reuse, family relationships, genetic analysis, and component-level attribution.",
+      "access": "public-or-shared-link",
+      "confidence": "HIGH",
+      "tags": [
+        "sandbox",
+        "code-reuse",
+        "family-analysis"
+      ]
+    },
+    {
+      "source": "FileScan.io",
+      "type": "sandbox-report",
+      "target": "2156c504f8b4ddc6d2760a0c989c31c93d53b85252d14095cebcadcbe3772a0c",
+      "url": "https://www.filescan.io/reports/2156c504f8b4ddc6d2760a0c989c31c93d53b85252d14095cebcadcbe3772a0c/335ec71d-7290-46c1-ad80-e834efe9c2ce/overview",
+      "provider": "FileScan.io",
+      "artifact_type": "sandbox-report",
+      "title": "FileScan.io Report",
+      "detail": "Dynamic analysis report for the hash, typically used to inspect runtime artifacts, dropped files, network traffic, and extracted IOCs.",
+      "access": "public-or-shared-link",
+      "confidence": "HIGH",
+      "tags": [
+        "sandbox",
+        "runtime",
+        "ioc-extraction"
+      ]
+    },
+    {
+      "source": "Malwares.com",
+      "type": "sandbox-report",
+      "target": "2156c504f8b4ddc6d2760a0c989c31c93d53b85252d14095cebcadcbe3772a0c",
+      "url": "https://www.malwares.com/report/file?hash=2156c504f8b4ddc6d2760a0c989c31c93d53b85252d14095cebcadcbe3772a0c",
+      "provider": "Malwares.com",
+      "artifact_type": "sandbox-report",
+      "title": "Malwares.com Analysis Report",
+      "detail": "Malware analysis report page for the hash. Useful for additional sandbox context and comparative verdicts.",
+      "access": "public-or-shared-link",
+      "confidence": "MEDIUM",
+      "tags": [
+        "sandbox",
+        "analysis",
+        "hash-intel"
+      ]
+    },
+    {
+      "source": "MalProb.io",
+      "type": "sandbox-report",
+      "target": "2156c504f8b4ddc6d2760a0c989c31c93d53b85252d14095cebcadcbe3772a0c",
+      "url": "https://malprob.io/report/2156c504f8b4ddc6d2760a0c989c31c93d53b85252d14095cebcadcbe3772a0c",
+      "provider": "MalProb.io",
+      "artifact_type": "sandbox-report",
+      "title": "MalProb.io Report",
+      "detail": "Third-party report page for the hash. Useful for another external verdict and supporting sample context.",
+      "access": "public-or-shared-link",
+      "confidence": "MEDIUM",
+      "tags": [
+        "sandbox",
+        "third-party",
+        "analysis"
+      ]
+    },
+    {
+      "source": "MalwareBazaar",
+      "type": "sample-report",
+      "target": "2156c504f8b4ddc6d2760a0c989c31c93d53b85252d14095cebcadcbe3772a0c",
+      "url": "https://bazaar.abuse.ch/sample/2156c504f8b4ddc6d2760a0c989c31c93d53b85252d14095cebcadcbe3772a0c",
+      "provider": "abuse.ch",
+      "artifact_type": "malware-sample",
+      "title": "MalwareBazaar Sample Record",
+      "detail": "Malware sample reference page for the hash. Typically used to review sample metadata, family labels, sightings, tags, and related hashes.",
+      "access": "public",
+      "confidence": "HIGH",
+      "tags": [
+        "sample",
+        "hash-intel",
+        "abuse.ch",
+        "malwarebazaar"
+      ]
+    },
+    {
+      "source": "JaffaCakes118",
+      "type": "community-analysis",
+      "target": "2156c504f8b4ddc6d2760a0c989c31c93d53b85252d14095cebcadcbe3772a0c",
+      "url": "https://jaffacakes118.dev/analysis/2156c504f8b4ddc6d2760a0c989c31c93d53b85252d14095cebcadcbe3772a0c",
+      "provider": "JaffaCakes118",
+      "artifact_type": "community-analysis",
+      "title": "Community Analysis Report",
+      "detail": "Community-authored analysis page for the hash. Useful for analyst notes, triage observations, and cross-reference context outside commercial portals.",
+      "access": "public",
+      "confidence": "MEDIUM",
+      "tags": [
+        "community",
+        "analysis",
+        "hash-intel"
+      ]
+    },
+    {
+      "source": "VirusTotal",
+      "type": "file-reputation",
+      "target": "2156c504f8b4ddc6d2760a0c989c31c93d53b85252d14095cebcadcbe3772a0c",
+      "url": "https://www.virustotal.com/gui/file/2156c504f8b4ddc6d2760a0c989c31c93d53b85252d14095cebcadcbe3772a0c",
+      "provider": "VirusTotal",
+      "artifact_type": "file-reputation",
+      "title": "VirusTotal File Reputation",
+      "detail": "File reputation page for the hash. Used to review multi-engine detections, community context, behavior links, and related samples when available.",
+      "access": "public-account-may-help",
+      "confidence": "HIGH",
+      "tags": [
+        "virustotal",
+        "reputation",
+        "multi-engine",
+        "hash-intel"
+      ]
+    }
+  ],
   "iocs": {
     "hashes": [
       {
@@ -49,7 +445,7 @@
   },
   "detection": {
     "yara": "rule SUSP_NodeJS_Malware_Unknown : malware_nodejs_rat\n{\n    meta:\n        description = \"Automatically generated YARA rule for Node.js malware detection\"\n        author = \"Security Talent Threat Intel v2.0\"\n        date = \"2026-05-05\"\n        reference = \"Security Talent Threat Intel\"\n        hash_md5 = \"\"\n        hash_sha256 = \"2156c504f8b4ddc6d2760a0c989c31c93d53b85252d14095cebcadcbe3772a0c\"\n    \n    strings:\n        $s1 = \"2156c504f8b4ddc6d2760a0c989c31c93d53b85252d14095cebcadcbe3772a0c\" wide ascii\n    \n    condition:\n        any of them\n}\n",
-    "sigma": "title: Node.js Malware Detection - IOC Hash (SHA256)\nid: sigma-mosjnlo7\nstatus: experimental\ndescription: |\n    Detects indicators of Node.js malware based on analysis of sample.\n    Generated by Security Talent Threat Intel v2.0.\n    Correlated with known campaigns (NodeCordRAT, SILKBELL, ClickFix, LofyGang).\nauthor: Security Talent Threat Intel (Automated)\ndate: 2026-05-05\nreferences:\n    - Security Talent Threat Intel\n    - https://www.zscaler.com/es/blogs/security-research/malicious-npm-packages-deliver-nodecordrat\n    - https://socket.dev/blog/axios-npm-package-compromised\n    - https://socprime.com/active-threats/clickfix-to-maas-inside-a-modular-windows-rat-and-its-control-panel/\n    - https://research.jfrog.com/post/lofygang-returns-a-dual-payload-npm-package/\nlogsource:\n    category: process_creation\n    product: windows\ndetection:\n    selection_node:\n        Image|endswith: '\\node.exe'\n        CommandLine|contains:\n            - 'execSync'\n            - 'child_process'\n            - 'http'\n            - '.onion'\n            - 'grpc'\n            - 'socks5'\n            - 'DownloadString'\n            - 'WebClient'\n    selection_registry:\n        TargetObject|contains:\n            - 'CurrentVersion\\\\Run\\\\Node'\n            - 'CurrentVersion\\\\Run\\\\LogicOptimizer'\n    selection_hash:\n        Hashes:\n            - '2156c504f8b4ddc6d2760a0c989c31c93d53b85252d14095cebcadcbe3772a0c'\n    selection_script:\n        - Image|endswith: '\\cscript.exe'\n          CommandLine|contains: '.vbs'\n        - Image|endswith: '\\wscript.exe'\n          CommandLine|contains: '.js'\n        - Image|endswith: '\\powershell.exe'\n          CommandLine|contains:\n            - 'node'\n            - 'npm'\n            - 'axios'\n    condition: 1 of selection_*\nfalsepositives:\n    - Legitimate Node.js development activity\n    - Authorized npm package installations\nlevel: high\n"
+    "sigma": "title: Node.js Malware Detection - IOC Hash (SHA256)\nid: sigma-mosmzpab\nstatus: experimental\ndescription: |\n    Detects indicators of Node.js malware based on analysis of sample.\n    Generated by Security Talent Threat Intel v2.0.\n    Correlated with known campaigns (NodeCordRAT, SILKBELL, ClickFix, LofyGang).\nauthor: Security Talent Threat Intel (Automated)\ndate: 2026-05-05\nreferences:\n    - Security Talent Threat Intel\n    - https://www.zscaler.com/es/blogs/security-research/malicious-npm-packages-deliver-nodecordrat\n    - https://socket.dev/blog/axios-npm-package-compromised\n    - https://socprime.com/active-threats/clickfix-to-maas-inside-a-modular-windows-rat-and-its-control-panel/\n    - https://research.jfrog.com/post/lofygang-returns-a-dual-payload-npm-package/\nlogsource:\n    category: process_creation\n    product: windows\ndetection:\n    selection_node:\n        Image|endswith: '\\node.exe'\n        CommandLine|contains:\n            - 'execSync'\n            - 'child_process'\n            - 'http'\n            - '.onion'\n            - 'grpc'\n            - 'socks5'\n            - 'DownloadString'\n            - 'WebClient'\n    selection_registry:\n        TargetObject|contains:\n            - 'CurrentVersion\\\\Run\\\\Node'\n            - 'CurrentVersion\\\\Run\\\\LogicOptimizer'\n    selection_hash:\n        Hashes:\n            - '2156c504f8b4ddc6d2760a0c989c31c93d53b85252d14095cebcadcbe3772a0c'\n    selection_script:\n        - Image|endswith: '\\cscript.exe'\n          CommandLine|contains: '.vbs'\n        - Image|endswith: '\\wscript.exe'\n          CommandLine|contains: '.js'\n        - Image|endswith: '\\powershell.exe'\n          CommandLine|contains:\n            - 'node'\n            - 'npm'\n            - 'axios'\n    condition: 1 of selection_*\nfalsepositives:\n    - Legitimate Node.js development activity\n    - Authorized npm package installations\nlevel: high\n"
   },
   "recommendations": [
     "Run full EDR/AV scan on all systems that may have been exposed to this sample.",
