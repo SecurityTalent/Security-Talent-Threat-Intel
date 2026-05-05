@@ -34,6 +34,7 @@ class DarkWebCollector {
 
       // 1. Clear-web threat intel APIs
       await this.searchAbuseIPDB(target, results, agent);
+      await this.searchShodan(target, results);
       await this.searchUrlscan(target, results);
       await this.searchVirusTotal(target, results);
       await this.searchFlare(target, results);
@@ -98,6 +99,95 @@ class DarkWebCollector {
       }
     } catch (e) {
       // API key may be missing or quota exceeded
+    }
+  }
+
+  /**
+   * Check Shodan for IP or domain exposure details
+   */
+  static async searchShodan(target, results) {
+    if (!config.api.shodan) return;
+
+    const isIp = this.isIpv4(target);
+    const hostname = isIp ? null : this.extractHostname(target);
+
+    if (!isIp && !hostname) return;
+
+    try {
+      if (isIp) {
+        await this.searchShodanHost(target, results);
+        return;
+      }
+
+      const domainResp = await axios.get(
+        `${config.darkweb.clearweb.shodan}/dns/domain/${encodeURIComponent(hostname)}?key=${encodeURIComponent(config.api.shodan)}`,
+        { timeout: 10000 }
+      );
+
+      const records = domainResp.data?.data || [];
+      const subdomains = domainResp.data?.subdomains || [];
+      if (records.length > 0 || subdomains.length > 0) {
+        results.sources_used.push('Shodan');
+        results.mentions_found.push(
+          `[Shodan] ${hostname}: ${records.length} DNS record(s), ${subdomains.length} subdomain(s)`
+        );
+        results.correlation.push({
+          source: 'Shodan',
+          target,
+          type: 'domain',
+          domain: hostname,
+          dnsRecords: records.length,
+          subdomains: subdomains.slice(0, 10)
+        });
+      }
+
+      const resolveResp = await axios.get(
+        `${config.darkweb.clearweb.shodan}/dns/resolve?hostnames=${encodeURIComponent(hostname)}&key=${encodeURIComponent(config.api.shodan)}`,
+        { timeout: 10000 }
+      );
+
+      const resolvedIp = resolveResp.data?.[hostname];
+      if (resolvedIp) {
+        await this.searchShodanHost(resolvedIp, results, { originalTarget: target, hostname });
+      }
+    } catch (e) {
+      // Silent fallback when Shodan lookup is unavailable or lacks access
+    }
+  }
+
+  static async searchShodanHost(ip, results, metadata = {}) {
+    try {
+      const resp = await axios.get(
+        `${config.darkweb.clearweb.shodan}/shodan/host/${encodeURIComponent(ip)}?key=${encodeURIComponent(config.api.shodan)}&minify=true`,
+        { timeout: 10000 }
+      );
+
+      const data = resp.data || {};
+      const ports = Array.isArray(data.ports) ? data.ports : [];
+      const hostnames = Array.isArray(data.hostnames) ? data.hostnames : [];
+      const domains = Array.isArray(data.domains) ? data.domains : [];
+      const displayTarget = metadata.hostname || metadata.originalTarget || ip;
+
+      if (ports.length === 0 && hostnames.length === 0 && domains.length === 0) return;
+
+      results.sources_used.push('Shodan');
+      results.mentions_found.push(
+        `[Shodan] ${displayTarget}: ${ports.length} open port(s) observed on ${ip}`
+      );
+      results.correlation.push({
+        source: 'Shodan',
+        target: metadata.originalTarget || ip,
+        type: 'host',
+        ip,
+        organization: data.org || data.isp,
+        country: data.country_name || data.country_code,
+        ports: ports.slice(0, 15),
+        hostnames: hostnames.slice(0, 10),
+        domains: domains.slice(0, 10),
+        lastUpdated: data.last_update
+      });
+    } catch (e) {
+      // IP may not exist in Shodan or access level may be insufficient
     }
   }
 
@@ -418,6 +508,23 @@ class DarkWebCollector {
           results.sources_used.push('Threat Intelligence Correlation Engine');
         }
       }
+    }
+  }
+
+  static isIpv4(target) {
+    return /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(String(target).trim());
+  }
+
+  static extractHostname(target) {
+    const raw = String(target || '').trim();
+    if (!raw) return null;
+
+    try {
+      const normalized = raw.includes('://') ? raw : `http://${raw}`;
+      const hostname = new URL(normalized).hostname.toLowerCase();
+      return hostname || null;
+    } catch (e) {
+      return null;
     }
   }
 }

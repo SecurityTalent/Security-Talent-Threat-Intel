@@ -310,23 +310,23 @@ The response body is scanned for:
 These are consumed selectively by the backend:
 
 - `searchAbuseIPDB()` for IP reputation
+- `searchShodan()` for IP exposure, DNS records, and resolved-host summaries
 - `searchUrlscan()` for scan history and domain/URL visibility
 - `searchVirusTotal()` for hash reputation
 - `searchFlare()` for global event search and leak/event correlation
-
-`shodan` is currently present in config but is not yet called in `src/collectors/darkweb.js`.
 
 ### Backend Execution Order
 
 For each IOC target, the backend currently runs in this order:
 
 1. AbuseIPDB
-2. URLScan
-3. VirusTotal
-4. Flare
-5. Onion search engines
-6. Paste site lookups
-7. Local campaign correlation engine
+2. Shodan
+3. URLScan
+4. VirusTotal
+5. Flare
+6. Onion search engines
+7. Paste site lookups
+8. Local campaign correlation engine
 
 This order is implemented inside:
 
@@ -411,10 +411,10 @@ These engines are defined in [config/default.js](/C:/Users/user/Desktop/threat-i
 ### Configured Clear-Web Sources
 
 - AbuseIPDB
+- Shodan
 - URLScan
 - VirusTotal
 - Flare
-- Shodan is present in config but is not currently queried by `src/collectors/darkweb.js`
 
 ### Additional Paste and Leak Search Targets in Code
 
@@ -452,6 +452,7 @@ The following command paths were locally verified on May 5, 2026 using temporary
 | `npm.cmd run analyze:strings` | Verified | Wrapper works |
 | `npm.cmd run ioc:search` | Verified | Wrapper works |
 | Live VirusTotal or AbuseIPDB results | Not live-tested | Requires valid API keys and network access |
+| Live Shodan results | Not live-tested | Requires valid Shodan API key and network access |
 | Live Flare results | Not live-tested | Requires valid Flare API key, tenant access, and network access |
 | Live onion-engine results | Not live-tested | Requires Tor access and reachable onion services |
 
